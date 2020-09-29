@@ -20,8 +20,6 @@ import ycm_core
 
 def GetRosIncludePaths():
     """Return a list of potential include directories
-
-    The directories are looked for in $ROS_WORKSPACE.
     """
     try:
         from rospkg import RosPack
@@ -29,7 +27,6 @@ def GetRosIncludePaths():
         return []
     rospack = RosPack()
     includes = []
-    includes.append(os.path.expandvars('$ROS_WORKSPACE') + '/devel/include')
     for p in rospack.list():
         if os.path.exists(rospack.get_path(p) + '/include'):
             includes.append(rospack.get_path(p) + '/include')
@@ -56,14 +53,15 @@ def GetRosIncludeFlags():
 #   catkin config --cmake-args '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
 # in your shell.
 
+
 default_flags = [
     '-Wall',
-#    '-Wextra',
-#    '-Werror',
-#    '-Wc++98-compat',
-#    '-Wno-long-long',
-#    '-Wno-variadic-macros',
-#    '-fexceptions',
+    # '-Wextra',
+    # '-Werror',
+    # '-Wc++98-compat',
+    # '-Wno-long-long',
+    # '-Wno-variadic-macros',
+    # '-fexceptions',
     '-DNDEBUG',
     # THIS IS IMPORTANT! Without a "-std=<something>" flag, clang won't know
     # which language to use when compiling headers. So it will guess. Badly. So
@@ -100,14 +98,22 @@ def GetCompilationDatabaseFolder(filename):
     the package the file belongs to.
     """
 
-    ros_workspace = os.path.expandvars('$ROS_WORKSPACE')
+    # Figure out the package of the file by going up until package.xml is found.
+    # Figure out catkin workspace by going up until .catkin_tools is found.
+    path = os.path.dirname(filename)
+    package_name = None
+    ros_workspace = None
+    while len(path) > 0:
+        if os.path.exists(os.path.join(path, 'package.xml')):
+            package_name = os.path.basename(path)
+        if os.path.exists(os.path.join(path, '.catkin_tools')):
+            ros_workspace = path
+            break
 
-    if ros_workspace:
-        dir = (ros_workspace +
-                os.path.sep +
-                'build' +
-                os.path.sep)
-        return dir
+        path = os.path.dirname(path)
+
+    if ros_workspace and package_name:
+        return os.path.join(ros_workspace, 'build', package_name)
     else:
         return ''
 
@@ -116,6 +122,7 @@ def GetDatabase(compilation_database_folder):
     if os.path.exists(compilation_database_folder):
         return ycm_core.CompilationDatabase(compilation_database_folder)
     return None
+
 
 SOURCE_EXTENSIONS = ['.cpp', '.cxx', '.cc', '.c', '.m', '.mm']
 
